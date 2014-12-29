@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from functools import partial, wraps
 import hashlib
 from logging import getLogger
+import time
 
 from celery import _state, Celery as CeleryClass
 
@@ -231,7 +232,7 @@ class Celery(CeleryClass):
         setattr(self, 'Task', ContextTask)
 
 
-def single_instance(func=None, lock_timeout=None, include_args=False):
+def single_instance(func=None, lock_timeout=None, include_args=False, blocking_timeout=0):
     """Celery task decorator. Forces the task to have only one running instance at a time.
 
     Use with binded tasks (@celery.task(bind=True)).
@@ -255,9 +256,12 @@ def single_instance(func=None, lock_timeout=None, include_args=False):
     include_args -- include the md5 checksum of the arguments passed to the task in the Redis key. This allows the same
         task to run with different arguments, only stopping a task from running if another instance of it is running
         with the same arguments.
+    blocking_timeout -- wait up to these many seconds for other instances to finish before raising OtherInstanceError.
+        Use with caution, may result in Celery task deadlocks. Attempts are done every 1 second.
     """
     if func is None:
-        return partial(single_instance, lock_timeout=lock_timeout, include_args=include_args)
+        return partial(single_instance, lock_timeout=lock_timeout, include_args=include_args,
+                       blocking_timeout=blocking_timeout)
 
     @wraps(func)
     def wrapped(celery_self, *args, **kwargs):
@@ -273,7 +277,18 @@ def single_instance(func=None, lock_timeout=None, include_args=False):
         lock_manager = manager_class(celery_self, timeout, include_args, args, kwargs)
 
         # Lock and execute.
-        with lock_manager:
-            ret_value = func(*args, **kwargs)
-        return ret_value
+        if not blocking_timeout:
+            with lock_manager:
+                return func(*args, **kwargs)
+
+        # Lock, execute, retry.
+        for i in range(blocking_timeout):
+            try:
+                with lock_manager:
+                    return func(*args, **kwargs)
+            except OtherInstanceError:
+                if i + 1 == blocking_timeout:
+                    raise
+            time.sleep(1)
+
     return wrapped
