@@ -4,9 +4,9 @@ https://github.com/Robpol86/Flask-Celery-Helper
 https://pypi.python.org/pypi/Flask-Celery-Helper
 """
 
+import hashlib
 from datetime import datetime, timedelta
 from functools import partial, wraps
-import hashlib
 from logging import getLogger
 
 from celery import _state, Celery as CeleryClass

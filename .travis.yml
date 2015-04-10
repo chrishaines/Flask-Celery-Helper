@@ -1,43 +1,35 @@
 language: python
 
-python:
-  - 2.6
-  - 2.7
-  - pypy
-  - 3.3
-  - 3.4
-
-services:
-  - redis-server
-  #- rabbitmq
-  #- mongodb
-  #- couchdb
+matrix:
+  include:
+    - env: BROKER=sqlite
+    - env: BROKER=mysql
+      before_script:
+        - mysql -u root -e 'CREATE DATABASE flask_celery_helper_test;'
+        - mysql -u root -e 'GRANT ALL PRIVILEGES ON flask_celery_helper_test.* TO "user"@"localhost" IDENTIFIED BY "pass";'
+    - env: BROKER=postgres
+      before_script:
+        - psql -U postgres -c 'CREATE DATABASE flask_celery_helper_test;'
+        - psql -U postgres -c "CREATE USER user1 WITH PASSWORD 'pass';"
+        - psql -U postgres -c 'GRANT ALL PRIVILEGES ON DATABASE flask_celery_helper_test TO user1;'
+    - env: BROKER=redis
+      services: redis-server
+    - env: BROKER=redis_sock,/tmp/redis.sock
+      before_script: echo -e "daemonize yes\nunixsocket /tmp/redis.sock\nport 0" |redis-server -
+    #- env: BROKER=mongo
+    #- env: BROKER=couch
+    #- env: BROKER=beanstalk
+    #- env: BROKER=iron
+    #- env: BROKER=rabbit
 
 install:
-  - python -c 'import setup; print(setup.REQUIRES_PIP)' |xargs pip install
-  - pip install robpol86-codecov
-  - pip install .
-
-before_script:
-  - echo -e "daemonize yes\nunixsocket /tmp/redis.sock\nport 0" |redis-server -
-  - mysql -u root -e 'CREATE DATABASE flask_celery_helper_test;'
-  - mysql -u root -e 'GRANT ALL PRIVILEGES ON flask_celery_helper_test.* TO "user"@"localhost" IDENTIFIED BY "pass";'
-  - psql -U postgres -c 'CREATE DATABASE flask_celery_helper_test;'
-  - psql -U postgres -c "CREATE USER user1 WITH PASSWORD 'pass';"
-  - psql -U postgres -c 'GRANT ALL PRIVILEGES ON DATABASE flask_celery_helper_test TO user1;'
+  - pip install codecov tox
 
 script:
-  - python setup.py test && mv .coverage .coverage.sqlite  # SQLAlchemy SQLite
-  - BROKER=mysql python setup.py test && mv .coverage .coverage.mysql
-  - BROKER=postgres python setup.py test && mv .coverage .coverage.postgres
-  - BROKER=redis python setup.py test && mv .coverage .coverage.redis
-  - BROKER=redis_sock,/tmp/redis.sock python setup.py test && mv .coverage .coverage.redis_sock
-  #- BROKER=mongo python setup.py test && mv .coverage .coverage.mongo
-  #- BROKER=couch python setup.py test && mv .coverage .coverage.couch
-  #- BROKER=beanstalk python setup.py test && mv .coverage .coverage.beanstalk
-  #- BROKER=iron python setup.py test && mv .coverage .coverage.iron
-  #- BROKER=rabbit python setup.py test && mv .coverage .coverage.rabbit
+  - tox
+  - (cd ./tests && ls .coverage.py34 .coverage.py33 .coverage.pypy3 .coverage.pypy .coverage.py27 .coverage.py26)
 
 after_success:
+  - mv tests/.coverage* .
   - coverage combine
   - codecov

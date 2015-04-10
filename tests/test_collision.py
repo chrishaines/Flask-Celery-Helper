@@ -1,5 +1,5 @@
-from flask.ext.celery import OtherInstanceError, _select_manager
 import pytest
+from flask.ext.celery import _select_manager, OtherInstanceError
 
 from tests.instances import celery
 

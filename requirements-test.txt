@@ -1,0 +1,6 @@
+-r requirements.txt
+Flask-Redis-Helper
+Flask-SQLAlchemy
+PyMySQL
+pg8000
+pytest-cov

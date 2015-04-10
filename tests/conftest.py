@@ -3,8 +3,8 @@
 import threading
 import time
 
-from celery.signals import worker_ready
 import pytest
+from celery.signals import worker_ready
 
 from tests.instances import app, celery
 

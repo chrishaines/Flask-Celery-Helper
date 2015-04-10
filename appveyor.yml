@@ -1,58 +1,51 @@
 environment:
   CODECOV_TOKEN:
     secure: SUr0uj2ygHCZaTNHy+OnVmmkR3ZJoE8wz5SaT9uK2xDSoVi4EvFg88v8JmCWtJ5r
-  PYTHONIOENCODING: utf-8
-  PGPASSWORD: Password12!
 
-  matrix:
-    - PYTHON: C:\Python27
-    - PYTHON: C:\Python27-x64
-    - PYTHON: C:\Python33
-    - PYTHON: C:\Python33-x64
-    - PYTHON: C:\Python34
-    - PYTHON: C:\Python34-x64
+matrix:
+  - environment: BROKER=sqlite
+  - environment: BROKER=mysql
+    after_build:
+      - mysql -u root -p"Password12!" -e "CREATE DATABASE flask_celery_helper_test;"
+      - mysql -u root -p"Password12!" -e "GRANT ALL PRIVILEGES ON flask_celery_helper_test.* TO 'user'@'localhost' IDENTIFIED BY 'pass';"
+    services: mysql
+  - environment:
+      - BROKER=postgres
+      - PGPASSWORD=Password12!
+    services: postgresql
+    after_build:
+      - psql -U postgres -c "CREATE DATABASE flask_celery_helper_test;"
+      - psql -U postgres -c "CREATE USER user1 WITH PASSWORD 'pass';"
+      - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE flask_celery_helper_test TO user1;"
+  - environment: BROKER=redis
+    after_build:
+      - cinst redis-64
+      - redis-server --service-install
+      - redis-server --service-start
+  #- BROKER=redis_sock,/tmp/redis.sock
+  #- BROKER=mongo
+  #- BROKER=couch
+  #- BROKER=beanstalk
+  #- BROKER=iron
+  #- BROKER=rabbit
 
 init:
-  - IF DEFINED PYTHON set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
-  - set PATH=%PATH%;C:\Program Files\MySQL\MySQL Server 5.6\bin;C:\Program Files\PostgreSQL\9.3\bin
+  - set PATH=C:\Python34-x64;C:\Python34-x64\Scripts;%PATH%
 
 install:
   - ps: Start-FileDownload https://raw.github.com/pypa/pip/master/contrib/get-pip.py
   - python get-pip.py
-  - ps: pip install $(python -c 'import setup; print(setup.REQUIRES_PIP)')
-  - pip install robpol86-codecov
-
-services:
-  - mysql
-  - postgresql
 
 build_script:
-  - ps: mv .git ..
-  - pip install .
-  - ps: mv ..\.git .
-
-after_build:
-  - cinst redis-64
-  - redis-server --service-install
-  - redis-server --service-start
-  - mysql -u root -p"Password12!" -e "CREATE DATABASE flask_celery_helper_test;"
-  - mysql -u root -p"Password12!" -e "GRANT ALL PRIVILEGES ON flask_celery_helper_test.* TO 'user'@'localhost' IDENTIFIED BY 'pass';"
-  - psql -U postgres -c "CREATE DATABASE flask_celery_helper_test;"
-  - psql -U postgres -c "CREATE USER user1 WITH PASSWORD 'pass';"
-  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE flask_celery_helper_test TO user1;"
+  - pip install codecov tox
 
 test_script:
-  - python setup.py test && ren .coverage .coverage.sqlite  # SQLAlchemy SQLite
-  - cmd /C "set BROKER=mysql&& python setup.py test && ren .coverage .coverage.mysql
-  - cmd /C "set BROKER=postgres&& python setup.py test && ren .coverage .coverage.postgres
-  - cmd /C "set BROKER=redis&& python setup.py test && ren .coverage .coverage.redis
-  #- cmd /C "set BROKER=redis_sock,/tmp/redis.sock&& python setup.py test && ren .coverage .coverage.redis_sock
-  #- cmd /C "set BROKER=mongo&& python setup.py test && ren .coverage .coverage.mongo
-  #- cmd /C "set BROKER=couch&& python setup.py test && ren .coverage .coverage.couch
-  #- cmd /C "set BROKER=beanstalk&& python setup.py test && ren .coverage .coverage.beanstalk
-  #- cmd /C "set BROKER=iron&& python setup.py test && ren .coverage .coverage.iron
-  #- cmd /C "set BROKER=rabbit&& python setup.py test && ren .coverage .coverage.rabbit
+  - tox
+  - cd tests
+  - ps: ls .coverage.py34x64, .coverage.py34, .coverage.py33x64, .coverage.py33, .coverage.py27x64, .coverage.py27
+  - cd ..
 
 after_test:
+  - mv tests/.coverage.* .
   - coverage combine
   - codecov
