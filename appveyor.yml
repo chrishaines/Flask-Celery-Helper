@@ -3,17 +3,17 @@ environment:
     secure: SUr0uj2ygHCZaTNHy+OnVmmkR3ZJoE8wz5SaT9uK2xDSoVi4EvFg88v8JmCWtJ5r
 
   matrix:
-    - BROKER=sqlite
-    - BROKER=mysql
-    - BROKER=postgres
-      PGPASSWORD=Password12!
-    - BROKER=redis
-  #- BROKER=redis_sock,/tmp/redis.sock
-  #- BROKER=mongo
-  #- BROKER=couch
-  #- BROKER=beanstalk
-  #- BROKER=iron
-  #- BROKER=rabbit
+    - BROKER: sqlite
+    - BROKER: mysql
+    - BROKER: postgres
+      PGPASSWORD: Password12!
+    - BROKER: redis
+    #- BROKER: redis_sock,/tmp/redis.sock
+    #- BROKER: mongo
+    #- BROKER: couch
+    #- BROKER: beanstalk
+    #- BROKER: iron
+    #- BROKER: rabbit
 
 services:
   - mysql
