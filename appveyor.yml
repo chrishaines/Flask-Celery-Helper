@@ -2,32 +2,32 @@ environment:
   CODECOV_TOKEN:
     secure: SUr0uj2ygHCZaTNHy+OnVmmkR3ZJoE8wz5SaT9uK2xDSoVi4EvFg88v8JmCWtJ5r
 
-matrix:
-  - environment: BROKER=sqlite
-  - environment: BROKER=mysql
-    after_build:
-      - mysql -u root -p"Password12!" -e "CREATE DATABASE flask_celery_helper_test;"
-      - mysql -u root -p"Password12!" -e "GRANT ALL PRIVILEGES ON flask_celery_helper_test.* TO 'user'@'localhost' IDENTIFIED BY 'pass';"
-    services: mysql
-  - environment:
-      - BROKER=postgres
-      - PGPASSWORD=Password12!
-    services: postgresql
-    after_build:
-      - psql -U postgres -c "CREATE DATABASE flask_celery_helper_test;"
-      - psql -U postgres -c "CREATE USER user1 WITH PASSWORD 'pass';"
-      - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE flask_celery_helper_test TO user1;"
-  - environment: BROKER=redis
-    after_build:
-      - cinst redis-64
-      - redis-server --service-install
-      - redis-server --service-start
+  matrix:
+    - BROKER=sqlite
+    - BROKER=mysql
+    - BROKER=postgres
+      PGPASSWORD=Password12!
+    - BROKER=redis
   #- BROKER=redis_sock,/tmp/redis.sock
   #- BROKER=mongo
   #- BROKER=couch
   #- BROKER=beanstalk
   #- BROKER=iron
   #- BROKER=rabbit
+
+services:
+  - mysql
+  - postgresql
+
+after_build:
+  - cinst redis-64
+  - redis-server --service-install
+  - redis-server --service-start
+  - mysql -u root -p"Password12!" -e "CREATE DATABASE flask_celery_helper_test;"
+  - mysql -u root -p"Password12!" -e "GRANT ALL PRIVILEGES ON flask_celery_helper_test.* TO 'user'@'localhost' IDENTIFIED BY 'pass';"
+  - psql -U postgres -c "CREATE DATABASE flask_celery_helper_test;"
+  - psql -U postgres -c "CREATE USER user1 WITH PASSWORD 'pass';"
+  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE flask_celery_helper_test TO user1;"
 
 init:
   - set PATH=C:\Python34-x64;C:\Python34-x64\Scripts;%PATH%
