@@ -1,7 +1,6 @@
 environment:
   CODECOV_TOKEN:
     secure: SUr0uj2ygHCZaTNHy+OnVmmkR3ZJoE8wz5SaT9uK2xDSoVi4EvFg88v8JmCWtJ5r
-
   PGPASSWORD: Password12!
 
   matrix:
@@ -21,7 +20,7 @@ services:
   - postgresql
 
 after_build:
-  - cinst redis-64
+  - cinst -y redis-64
   - redis-server --service-install
   - redis-server --service-start
   - mysql -u root -p"Password12!" -e "CREATE DATABASE flask_celery_helper_test;"
