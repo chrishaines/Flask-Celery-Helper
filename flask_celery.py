@@ -197,7 +197,7 @@ class Celery(CeleryClass):
         """
         self.original_register_app = _state._register_app  # Backup Celery app registration function.
         _state._register_app = lambda _: None  # Upon Celery app registration attempt, do nothing.
-	self.init_kwargs = kwargs.copy()
+        self.init_kwargs = kwargs.copy()
         super(Celery, self).__init__()
         if app is not None:
             self.init_app(app)
